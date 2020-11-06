@@ -3,6 +3,55 @@ from vtk.util import numpy_support
 import numpy as np
 import SimpleITK as sitk
 import cv2
+from PIL import Image
+import io,os
+
+Sky = [128,128,128]
+Building = [128,0,0]
+Pole = [192,192,128]
+Road = [128,64,128]
+Pavement = [60,40,222]
+Tree = [128,128,0]
+SignSymbol = [192,128,128]
+Fence = [64,64,128]
+Car = [64,0,128]
+Pedestrian = [64,64,0]
+Bicyclist = [0,128,192]
+Unlabelled = [0,0,0]
+COLOR_DICT = np.array([Sky, Building, Pole, Road, Pavement,
+                          Tree, SignSymbol, Fence, Car, Pedestrian, Bicyclist, Unlabelled])
+
+def labelVisualize(num_class,color_dict,img):
+    img = img[:,:,0] if len(img.shape) == 3 else img
+    img_out = np.zeros(img.shape + (3,))
+    for i in range(num_class):
+        img_out[img == i,:] = color_dict[i]
+    return img_out / 255
+
+def load_grayscale_image_VTK(image_path):
+    """Load grayscale image
+    :param image_path: path to image to load
+    :return: loaded image
+    """
+    img = vtk.vtkPNGReader()
+    img.SetFileName(os.path.normpath(image_path))
+    img.Update()
+
+
+    _extent = img.GetDataExtent()
+    ConstPixelDims = [_extent[1]-_extent[0]+1, _extent[3]-_extent[2]+1, _extent[5]-_extent[4]+1]
+
+    img_data = img.GetOutput()
+    datapointer = img_data.GetPointData()
+    assert (datapointer.GetNumberOfArrays()==1)
+    vtkarray = datapointer.GetArray(0)
+    img = vtk.util.numpy_support.vtk_to_numpy(vtkarray)
+    img = img.reshape(ConstPixelDims, order='F')
+
+    img = img / np.max(img)
+    img = img.astype('float32')
+
+    return img
 
 
 def load_dicom(foldername, doflipz = True):
@@ -27,15 +76,57 @@ def load_dicom(foldername, doflipz = True):
     # Get the `vtkArray` (or whatever derived type) which is needed for the `numpy_support.vtk_to_numpy` function
     arrayData = pointData.GetArray(0)
 
-
     # Convert the `vtkArray` to a NumPy array
     ArrayDicom = numpy_support.vtk_to_numpy(arrayData)
-    arrayData = np.transpose(arrayData)
     # Reshape the NumPy array to 3D using 'ConstPixelDims' as a 'shape'
     ArrayDicom = ArrayDicom.reshape(ConstPixelDims, order='F')
 
 
     return ArrayDicom
+
+def load_mhd(filename):
+    ##ImageDataGenerator expects (z,x,y) order of array
+    itk_image = sitk.ReadImage(filename, sitk.sitkFloat32)
+    np_array = sitk.GetArrayFromImage(itk_image)
+    ##change order of dimensions to (x,y,z)
+    # np_array = np.moveaxis(np_array, 0, -1)
+
+    return np_array
+
+def plotFromGenerator3d(gen):
+    count=0
+    for i in gen:
+      #pydicom.dcmread(gen(i))
+      for batch in range(0,np.shape(i[0])[0]):
+          for k in range(0,np.shape(i[0])[3]):
+              background = i[0][batch,:,:,k,0]
+              background = background/ np.max(background)
+              background = (background * 255).astype('uint8')
+              background = Image.fromarray(background)
+              background = background.convert("RGBA")
+              img = i[1][batch,:,:,k,0]
+              overlay = Image.fromarray((img * 255).astype('uint8'))
+              overlay = overlay.convert("RGBA")
+
+              # Split into 3 channels
+              r, g, b, a = overlay.split()
+
+              # Increase Reds
+              g = b.point(lambda i: i * 0)
+
+              # Recombine back to RGB image
+              overlay = Image.merge('RGBA', (r, g, b, a))
+              new_img = Image.blend(background, overlay, 0.3)
+              new_img.save(str(count)+ ".png", "PNG")
+              count +=1
+              '''  
+              plt.imshow(new_img ,cmap=plt.cm.bone)
+              plt.imsave("dicom.png", i[0][0, :, :, 0])
+              plt.show()
+              plt.imshow((i[1][0,:,:,0]),cmap=plt.cm.bone)
+              plt.imsave("dicomlabel.png",i[1][0,:,:,0])
+              plt.show()
+              '''
 
 def saveSitkPng(array, path):
     sitk_output_image = sitk.GetImageFromArray(array)
@@ -49,3 +140,107 @@ def saveSitkMdh(npy_output,save_path):
 def saveCv2Png(array, path):
     array = (array * 255).astype(np.int16)
     cv2.imwrite(path,array)
+
+
+def overlay(overlay, background):
+    background = background[:, :, 0] / np.max(background[:, :, 0])
+    background = Image.fromarray((background * 255).astype('uint8'))
+    background = background.convert("RGBA")
+    overlay = overlay.convert("RGBA")
+
+    # Split into 3 channels
+    r, g, b, a = overlay.split()
+
+    # Increase Reds
+    g = b.point(lambda i: i * 0)
+
+    # Recombine back to RGB image
+    overlay = Image.merge('RGBA', (r, g, b, a))
+
+    new_img = Image.blend(background, overlay, 0.3)
+
+    return new_img
+
+def overlay3dup(background,overlay, size = (512, 512)):
+    img =background[:,:,0]
+    img = img/ np.max(img)
+    background = Image.fromarray((img * 255).astype('uint8'))
+    # background = background.rotate(90, expand=True)
+    # background = Image.fromarray((img2).astype('float'))
+    overlay = cv2.resize(overlay[:, :], size, interpolation=cv2.INTER_NEAREST)
+    overlay = cv2.medianBlur(overlay, 5)
+    overlay = Image.fromarray((overlay * 255).astype('uint8'))
+
+    background = background.convert("RGBA")
+    overlay = overlay.convert("RGBA")
+
+    # Split into 3 channels
+    r, g, b, a = overlay.split()
+
+    # Increase Reds
+    g = b.point(lambda i: i * 0)
+
+    # Recombine back to RGB image
+    overlay = Image.merge('RGBA', (r, g, b, a))
+
+    new_img = Image.blend(background, overlay, 0.3)
+    return new_img
+
+def saveResult(save_path,npyfile,flag_multi_class = False,num_class = 2, test_frames_path=None, overlay=False, overlay_path=None):
+    '''
+    for i,item in enumerate(npyfile):
+        img = labelVisualize(num_class,COLOR_DICT,item) if flag_multi_class else item[:,:,0]
+        #io.imsave(os.path.join(save_path,"%d_predict.png"%i),img)
+        io.imsave(os.path.join(save_path, os.listdir(test_frames_path)[i][:-4]+".png"), img)
+    '''
+    if overlay:
+        all_frames = os.listdir(test_frames_path)
+        for i, item in enumerate(npyfile):
+            img = labelVisualize(num_class, COLOR_DICT, item) if flag_multi_class else item[:, :, 0]
+            io.imsave(os.path.join(save_path, os.listdir(test_frames_path)[i][:-4] + ".png"), img)
+            '''
+            img2 = img.astype(np.float32)
+            # --- the following holds the square root of the sum of squares of the image dimensions ---
+            # --- this is done so that the entire width/height of the original image is used to express the complete circular range of the resulting polar image ---
+            value = np.sqrt(((img2.shape[0] / 2.0) ** 2.0) + ((img2.shape[1] / 2.0) ** 2.0))
+            polar_image = cv2.warpPolar(img2,img2.shape, (img2.shape[0] / 2, img2.shape[1] / 2), 800, cv2.WARP_FILL_OUTLIERS)
+            polar_image = polar_image.astype(np.uint8)
+            img = polar_image
+            '''
+            overlay = Image.fromarray((img*255).astype('uint8'))
+            background = load_dicom(os.path.join(test_frames_path, all_frames[i]))
+            overlay(overlay,background).save(os.path.join(overlay_path, 'image_' + all_frames[i][6:16] + 'png'), "PNG")
+
+
+def saveResult3d( npyfile, patch_size=8, flag_multi_class=False, num_class=2, save_path = None, test_frames_path=None, framepath2=None, overlay_path=None,overlay_path2 = None):
+    '''
+    for i,item in enumerate(npyfile):
+        img = labelVisualize(num_class,COLOR_DICT,item) if flag_multi_class else item[:,:,0]
+        #io.imsave(os.path.join(save_path,"%d_predict.png"%i),img)
+        io.imsave(os.path.join(save_path, os.listdir(test_frames_path)[i][:-4]+".png"), img)
+    '''
+    all_frames = os.listdir(test_frames_path)
+    count = 0
+    test_data = []
+    number_of_patches = np.floor(len(os.listdir(test_frames_path + '/' + all_frames[0])) / patch_size)
+    for i, ID in enumerate(all_frames):
+        slices = os.listdir(os.path.join(test_frames_path, ID))
+        while count < number_of_patches:
+            patch = slices[(count * patch_size):((count + 1) * patch_size)]
+            test_data.append([ID, patch])
+            count += 1
+        count = 0
+    for j,item in enumerate(npyfile):
+        for i in range(0,np.shape(npyfile)[3]):
+            img = labelVisualize(num_class, COLOR_DICT, item) if flag_multi_class else item[:, :, i,0]
+            io.imsave(os.path.join(save_path, test_data[j][1][i][:-4] + ".png"), img)
+            imagepath = test_frames_path + '/' + test_data[j][0] + '/' + test_data[j][1][i]
+            background = load_grayscale_image_VTK(imagepath)
+            path = overlay_path+ '/'+ test_data[j][1][i][:-4] + '.png'
+            overlay(background, img).save(path, "PNG")
+            imagepath2 = framepath2 + '/'  + test_data[j][1][i][:-3]+'dcm'
+            background = load_dicom(imagepath2)
+            path = os.path.join(overlay_path2, test_data[j][1][i][:-4] + '.png')
+            overlay3dup(background, img).save(path, "PNG")
+
+
