@@ -11,7 +11,7 @@ class DataGenerator(Sequence):
     """Generates data for Keras
     Sequence based data generator. Suitable for building data generator for training and prediction.
     """
-    def __init__(self, list_IDs, image_path,mask_path,
+    def __init__(self, list_IDs, image_path, mask_path,
                  to_fit=True, batch_size=32, dim=(512, 512), dimy=(512, 512),
                  n_channels=1, n_classes=10, shuffle=True):
         """Initialization
@@ -481,4 +481,3 @@ class generator3da(generator3d):
                 if self.bool:
                     X[0,:,:,i,:] = self.trans.apply_transform(X[0,:,:,i,:], self.param)
         return X
-

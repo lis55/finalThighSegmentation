@@ -21,6 +21,34 @@ Unlabelled = [0,0,0]
 COLOR_DICT = np.array([Sky, Building, Pole, Road, Pavement,
                           Tree, SignSymbol, Fence, Car, Pedestrian, Bicyclist, Unlabelled])
 
+data_gen_args_dict = dict(shear_range=20,
+                    rotation_range=20,
+                    horizontal_flip=True,
+                    width_shift_range=0.2,
+                    height_shift_range=0.2,
+                    fill_mode='nearest')
+data_path ={"train":['G:/Datasets/elderlymen1/2d/train_frames', 'G:/Datasets/elderlymen1/2d/train_masks'],
+            "val":['G:/Datasets/elderlymen1/2d/val_frames', 'G:/Datasets/elderlymen1/2d/val_masks'],
+            "train3d": ['G:/Datasets/elderlymen1/3ddownsampled/train/images', 'G:/Datasets/elderlymen1/3ddownsampled/train/masks'],
+            "val3d": ['G:/Datasets/elderlymen1/3ddownsampled/val/images', 'G:/Datasets/elderlymen1/3ddownsampled/val/masks']
+            }
+test_paths = {1:['G:/Datasets/elderlymen1/2d/test_frames','G:/Datasets/elderlymen1/2d/test_masks'],
+              2:['G:/Datasets/elderlymen1/3ddownsampled/test/images','G:/Datasets/elderlymen1/3ddownsampled/test/masks'],
+              3:['G:/Datasets/elderlymen2/2d/images','G:/Datasets/elderlymen2/2d/FASCIA_FINAL'],
+              4:['G:/Datasets/youngmen/2d/images','G:/Datasets/youngmen/2d/FASCIA_FINAL'],
+              5:['G:/Datasets/elderlywomen/2d/images','G:/Datasets/elderlywomen/2d/FASCIA_FINAL']
+              }
+save_paths ={1:['C:/final_results/elderlymen1/3d', 'G:/Datasets/elderlymen1/3ddownsampled/test/images',
+               'G:/Datasets/elderlymen1/2d/images','C:/final_results/elderlymen1/3doverlaydown', 'C:/final_results/elderlymen2/3doverlay'],
+            2:['C:/final_results/elderlymen2/3d', 'G:/Datasets/elderlymen2/3ddownsampled/image',
+               'G:/Datasets/elderlymen2/2d/images','C:/final_results/elderlymen2/3doverlaydown', 'C:/final_results/elderlymen2/3doverlay'],
+            3:['C:/final_results/youngmen/3d', 'G:/Datasets/youngmen/3ddownsampled/image',
+               'G:/Datasets/youngmen/2d/images','C:/final_results/youngmen/3doverlaydown', 'C:/final_results/youngmen/3doverlay'],
+            4:['C:/final_results/elderlywomen/3d', 'G:/Datasets/elderlywomen/3ddownsampled/image',
+               'G:/Datasets/elderlywomen/2d/images', 'C:/final_results/elderlywomen/3doverlaydown',
+               'C:/final_results/elderlywomen/3doverlay']
+             }
+
 def labelVisualize(num_class,color_dict,img):
     img = img[:,:,0] if len(img.shape) == 3 else img
     img_out = np.zeros(img.shape + (3,))
@@ -141,6 +169,18 @@ def saveCv2Png(array, path):
     array = (array * 255).astype(np.int16)
     cv2.imwrite(path,array)
 
+def export_as_mhd(mask_path,save_path,n_slices = 28):
+    all_frames = os.listdir(mask_path)
+    shape = load_grayscale_image_VTK(os.path.join(mask_path, all_frames[0])).shape
+    for i in range(0, len(all_frames), n_slices):
+        mdh_array = np.zeros(shape+(n_slices))
+        name = all_frames[i]
+        count = 0
+        for j in range(i, i + n_slices):
+            mdh_array[count]=load_grayscale_image_VTK(os.path.join(mask_path, all_frames[j]))
+            count += 1
+        saveSitkMdh(mdh_array,os.path.join(save_path,name))
+
 
 def overlay(overlay, background):
     background = background[:, :, 0] / np.max(background[:, :, 0])
@@ -242,5 +282,3 @@ def saveResult3d( npyfile, patch_size=8, flag_multi_class=False, num_class=2, sa
             background = load_dicom(imagepath2)
             path = os.path.join(overlay_path2, test_data[j][1][i][:-4] + '.png')
             overlay3dup(background, img).save(path, "PNG")
-
-
