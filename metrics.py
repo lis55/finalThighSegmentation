@@ -4,7 +4,7 @@ from keras import backend as K
 import tensorflow as tf
 import matplotlib as plt
 import math
-from sklearn.utils.extmath import cartesian
+#from sklearn.utils.extmath import cartesian
 
 
 def dice_coefficient(y_true, y_pred, smooth=2.):
@@ -98,7 +98,7 @@ def dice_loss(y_true, y_pred, smooth=50):
     return 1 - val
 
 
-def combo_loss(y_true, y_pred,alpha=0.8, beta=0.4):
+def combo_loss(y_true, y_pred,alpha=0.5, beta=0.4):
     return alpha*tf.nn.weighted_cross_entropy_with_logits(y_true, y_pred, pos_weight=beta)+((1-alpha)*dice_coefficient_loss(y_true, y_pred))
 
 

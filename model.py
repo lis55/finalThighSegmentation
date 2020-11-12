@@ -11,6 +11,8 @@ from keras import backend as keras
 import tensorflow as tf
 from metrics import *
 
+
+
 def unet3d(pretrained_weights=None, input_size=(128, 128,8, 16)):
     inputs = Input(input_size)
     conv1 = Conv3D(64, 3, activation='relu', padding='same', kernel_initializer='he_normal')(inputs)
@@ -117,8 +119,8 @@ def unet(pretrained_weights=None, input_size=(512, 512, 1)):
     model = Model(input=inputs, output=conv10)
 
     # model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy'])
-    #model.compile(optimizer=Adam(lr=lr_schedule), loss=combo_loss, metrics=[dice_accuracy])
-    model.compile(optimizer=SGD(lr=0.001, momentum=0.8, decay=0.001, nesterov=False), loss=combo_loss, metrics=[dice_accuracy])
+    model.compile(optimizer=Adam(), loss=combo_loss, metrics=[dice_accuracy])
+    #model.compile(optimizer=RMSprop(lr=0.00001), loss=combo_loss, metrics=[dice_accuracy])
 
     if (pretrained_weights):
         model.load_weights(pretrained_weights)
@@ -126,10 +128,6 @@ def unet(pretrained_weights=None, input_size=(512, 512, 1)):
     return model
 
 
-lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
-    1e-2,
-    10000,
-    0.9)
 
 
 
