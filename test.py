@@ -43,7 +43,7 @@ model_checkpoint = ModelCheckpoint('unet_ThighOuterSurfaceval.hdf5', monitor='va
 model_checkpoint2 = ModelCheckpoint('unet_ThighOuterSurface.hdf5', monitor='loss', verbose=1, save_best_only=True)
 #2d
 model = unet()
-history = model.fit_generator(genaug, validation_data=genval, validation_steps=len(genval), steps_per_epoch=len(genaug), epochs=50, callbacks=[clr,model_checkpoint, model_checkpoint2])
+history = model.fit_generator(genaug, validation_data=genval, validation_steps=len(genval), steps_per_epoch=len(genaug), epochs=20, callbacks=[clr,model_checkpoint, model_checkpoint2])
 
 ######### predict and save ###########
 

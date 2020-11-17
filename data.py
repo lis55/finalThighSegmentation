@@ -37,29 +37,31 @@ data_gen_args_dict = dict(shear_range=20,
                     width_shift_range=0.2,
                     height_shift_range=0.2,
                     fill_mode='nearest')
-data_path ={"train":['G:/Datasets/elderlymen1/2d/train_frames', 'G:/Datasets/elderlymen1/2d/train_masks'],
-            "val":['G:/Datasets/elderlymen1/2d/val_frames', 'G:/Datasets/elderlymen1/2d/val_masks'],
-            "train3d": ['G:/Datasets/elderlymen1/3ddownsampled/train/images', 'G:/Datasets/elderlymen1/3ddownsampled/train/masks'],
-            "val3d": ['G:/Datasets/elderlymen1/3ddownsampled/val/images', 'G:/Datasets/elderlymen1/3ddownsampled/val/masks']
+data_path ={"train":['C:/Datasets/elderlymen1/2d/train_frames', 'C:/Datasets/elderlymen1/2d/train_masks'],
+            "val":['C:/Datasets/elderlymen1/2d/val_frames', 'C:/Datasets/elderlymen1/2d/val_masks'],
+            "train3d": ['C:/Datasets/elderlymen1/3ddownsampled/train/images', 'C:/Datasets/elderlymen1/3ddownsampled/train/masks'],
+            "val3d": ['C:/Datasets/elderlymen1/3ddownsampled/val/images', 'C:/Datasets/elderlymen1/3ddownsampled/val/masks']
             }
-test_paths = {1:['G:/Datasets/elderlymen1/2d/test_frames','G:/Datasets/elderlymen1/2d/test_masks'],
-              2:['G:/Datasets/elderlymen1/3ddownsampled/test/images','G:/Datasets/elderlymen1/3ddownsampled/test/masks'],
-              3:['G:/Datasets/elderlymen2/2d/images','G:/Datasets/elderlymen2/2d/FASCIA_FINAL'],
-              4:['G:/Datasets/youngmen/2d/images','G:/Datasets/youngmen/2d/FASCIA_FINAL'],
-              5:['G:/Datasets/elderlywomen/2d/images','G:/Datasets/elderlywomen/2d/FASCIA_FINAL']
+test_paths = {1:['C:/Datasets/elderlymen1/2d/test_frames','C:/Datasets/elderlymen1/2d/test_masks'],
+              2:['C:/Datasets/elderlymen1/3ddownsampled/test/images','C:/Datasets/elderlymen1/3ddownsampled/test/masks'],
+              3:['C:/Datasets/elderlymen2/2d/images','C:/Datasets/elderlymen2/2d/FASCIA_FINAL'],
+              4:['C:/Datasets/youngmen/2d/images','C:/Datasets/youngmen/2d/FASCIA_FINAL'],
+              5:['C:/Datasets/elderlywomen/2d/images','C:/Datasets/elderlywomen/2d/FASCIA_FINAL']
               }
-save_paths3d ={1:['C:/final_results/elderlymen1/3d', 'G:/Datasets/elderlymen1/3ddownsampled/test/images',
-               'G:/Datasets/elderlymen1/2d/images','C:/final_results/elderlymen1/3doverlaydown', 'C:/final_results/elderlymen2/3doverlay'],
-            2:['C:/final_results/elderlymen2/3d', 'G:/Datasets/elderlymen2/3ddownsampled/image',
-               'G:/Datasets/elderlymen2/2d/images','C:/final_results/elderlymen2/3doverlaydown', 'C:/final_results/elderlymen2/3doverlay'],
-            3:['C:/final_results/youngmen/3d', 'G:/Datasets/youngmen/3ddownsampled/image',
-               'G:/Datasets/youngmen/2d/images','C:/final_results/youngmen/3doverlaydown', 'C:/final_results/youngmen/3doverlay'],
-            4:['C:/final_results/elderlywomen/3d', 'G:/Datasets/elderlywomen/3ddownsampled/image',
-               'G:/Datasets/elderlywomen/2d/images', 'C:/final_results/elderlywomen/3doverlaydown',
+save_paths3d ={1:['C:/final_results/elderlymen1/3d', 'C:/Datasets/elderlymen1/3ddownsampled/test/images',
+               'C:/Datasets/elderlymen1/2d/images','C:/final_results/elderlymen1/3doverlaydown', 'C:/final_results/elderlymen2/3doverlay'],
+            2:['C:/final_results/elderlymen2/3d', 'C:/Datasets/elderlymen2/3ddownsampled/image',
+               'C:/Datasets/elderlymen2/2d/images','C:/final_results/elderlymen2/3doverlaydown', 'C:/final_results/elderlymen2/3doverlay'],
+            3:['C:/final_results/youngmen/3d', 'C:/Datasets/youngmen/3ddownsampled/image',
+               'C:/Datasets/youngmen/2d/images','C:/final_results/youngmen/3doverlaydown', 'C:/final_results/youngmen/3doverlay'],
+            4:['C:/final_results/elderlywomen/3d', 'C:/Datasets/elderlywomen/3ddownsampled/image',
+               'C:/Datasets/elderlywomen/2d/images', 'C:/final_results/elderlywomen/3doverlaydown',
                'C:/final_results/elderlywomen/3doverlay']
              }
 save_path2d = {1:['C:/final_results/elderlymen1/2d','C:/final_results/elderlymen1/2doverlay1' ,'C:/final_results/elderlymen1/2doverlay2'],
-               }
+               2:['C:/final_results/elderlymen2/2d','C:/final_results/elderlymen2/2doverlay1' ,'C:/final_results/elderlymen2/2doverlay2'],
+               3:['C:/final_results/youngmen/2d','C:/final_results/youngmen/2doverlay1' ,'C:/final_results/youngmen/2doverlay2'],
+               4:['C:/final_results/elderlywomen/2d','C:/final_results/elderlywomen/2doverlay1' ,'C:/final_results/elderlywomen/2doverlay2']}
 
 def labelVisualize(num_class,color_dict,img):
     img = img[:,:,0] if len(img.shape) == 3 else img
@@ -249,6 +251,7 @@ def saveResult(save_path,npyfile,flag_multi_class = False,num_class = 2, test_fr
         all_frames = os.listdir(test_frames_path)
         for i, item in enumerate(npyfile):
             img = labelVisualize(num_class, COLOR_DICT, item) if flag_multi_class else item[:, :, 0]
+            #img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
             io.imsave(os.path.join(save_path, os.listdir(test_frames_path)[i][:-4] + ".png"), img)
             '''
             img2 = img.astype(np.float32)
@@ -261,7 +264,9 @@ def saveResult(save_path,npyfile,flag_multi_class = False,num_class = 2, test_fr
             '''
             overlay = Image.fromarray((img*255).astype('uint8'))
             background = load_dicom(os.path.join(test_frames_path, all_frames[i]))
-            make_overlay(overlay,background).save(os.path.join(overlay_path, 'image_' + all_frames[i][6:16] + 'png'), "PNG")
+            #background = cv2.rotate(background, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            img = make_overlay(overlay,background)
+            img.save(os.path.join(overlay_path, 'image_' + all_frames[i][6:16] + 'png'), "PNG")
 
 
 def saveResult3d( npyfile, patch_size=8, flag_multi_class=False, num_class=2, save_path = None, test_frames_path=None, framepath2=None, overlay_path=None,overlay_path2 = None):

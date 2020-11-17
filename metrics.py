@@ -13,12 +13,12 @@ def dice_coefficient(y_true, y_pred, smooth=2.):
     intersection = K.sum(y_true_f * y_pred_f)
     return (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
 
-def dice_accuracy(y_true, y_pred, smooth=0.):
+def dice_accuracy(y_true, y_pred, smooth=0.01):
     return dice_coefficient(y_true, y_pred, smooth)
 
 
 def dice_coefficient_loss(y_true, y_pred):
-    return -dice_coefficient(y_true, y_pred)
+    return 1-dice_coefficient(y_true, y_pred)
 
 def hybrid_loss(y_true,y_pred):
     return -K.binary_crossentropy(y_true,y_pred)+3*dice_coefficient_loss(y_true, y_pred)
@@ -98,7 +98,7 @@ def dice_loss(y_true, y_pred, smooth=50):
     return 1 - val
 
 
-def combo_loss(y_true, y_pred,alpha=0.5, beta=0.4):
+def combo_loss(y_true, y_pred,alpha=0.6, beta=0.6): # beta before 0.4
     return alpha*tf.nn.weighted_cross_entropy_with_logits(y_true, y_pred, pos_weight=beta)+((1-alpha)*dice_coefficient_loss(y_true, y_pred))
 
 
@@ -138,8 +138,8 @@ def calculate_statistics(imagepath_1,imagepath_2):
         #plt.show()
         #m1 = cv2.resize(m1[:, :], (512, 512), interpolation=cv2.INTER_NEAREST)
         #m1 = cv2.medianBlur(m1, 5)
-        dice.append(dice_coef(m1, m2[:,:,0]))
-        hd.append(calc_hausdorff(m1,m2[:,:,0]))
+        dice.append(dice_coef(m1[:,:,0], m2[:,:,0]))
+        hd.append(calc_hausdorff(m1[:,:,0],m2[:,:,0]))
 
 
     hd=np.array(hd)

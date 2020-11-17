@@ -2,21 +2,22 @@ from data import *
 from metrics import *
 from model import *
 import shutil
+from generators import *
 
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]=""
 
-#predict for all the datasets
-paths1 = [save_paths3d[2][2],save_paths3d[3][2],save_paths3d[4][2]]## todo
-paths2 = [test_paths[3][1],test_paths[4][1],test_paths[5][1]]## todo
-for path, path2 in zip(paths1,paths2):
-    print()
-####### print statictics ############
-#comparison 2d model
-paths1 = [save_paths3d[2][2],save_paths3d[3][2],save_paths3d[4][2]]
-paths2 = [test_paths[3][1],test_paths[4][1],test_paths[5][1]]
-for path, path2 in zip(paths1,paths2):
-    calculate_statistics(path, path2)
-#comparison 3d model
-paths1 = [save_paths3d[2][0],save_paths3d[3][0],save_paths3d[4][0]]
-paths2 = [test_paths[3][1],test_paths[4][1],test_paths[5][1]]
-for path, path2 in zip(paths1,paths2):
-    calculate_statistics(path, path2)
+sample = open('metrics.txt', 'w')
+model = unet(pretrained_weights='modelbig4/unet_ThighOuterSurfaceval.hdf5')
+
+for i in (3,4,5):
+    list_IDs = os.listdir(test_paths[i][0])
+    testgen = DataGenerator(list_IDs, test_paths[i][0],test_paths[i][1], to_fit=True, batch_size=1, dim=(512, 512),dimy=(512, 512), n_channels=1, n_classes=2, shuffle=False)
+
+    results = model.predict_generator(testgen, len(list_IDs), verbose=1)
+    saveResult(save_path2d[i-1][0], results, test_frames_path=test_paths[i][0],overlay=True,overlay_path=save_path2d[i-1][1])
+    loss, acc = model.evaluate_generator(testgen, len(testgen), verbose=0)
+    print(loss,acc)
+    calculate_statistics(save_path2d[i-1][0], test_paths[i][1])
+    print('Test loss: {} Test accuracy {}'.format(loss, acc),file=sample)
+sample.close()
