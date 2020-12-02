@@ -15,10 +15,10 @@ end_lr = 1e3
 no_epochs = 10
 lr_finder = LRFinder(min_lr=start_lr, max_lr=end_lr)
 #####cyclic learning rate
-clr_step_size = int(2 * 44)
-base_lr = 1e-6
-max_lr = 2e-5
-mode='triangular'
+clr_step_size = int(2 * 700)
+base_lr = 6e-5
+max_lr = 5e-4
+mode='exp_range'
 clr = CyclicLR(base_lr=base_lr, max_lr=max_lr, step_size=clr_step_size, mode=mode)
 
 

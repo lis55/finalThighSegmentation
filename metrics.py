@@ -98,9 +98,10 @@ def dice_loss(y_true, y_pred, smooth=50):
     return 1 - val
 
 
-def combo_loss(y_true, y_pred,alpha=0.6, beta=0.6): # beta before 0.4
-    return alpha*tf.nn.weighted_cross_entropy_with_logits(y_true, y_pred, pos_weight=beta)+((1-alpha)*dice_coefficient_loss(y_true, y_pred))
-
+def combo_loss(alpha=0.3, beta=0.4): # beta before 0.4
+    def loss(y_true, y_pred):
+        return alpha*tf.nn.weighted_cross_entropy_with_logits(y_true, y_pred, pos_weight=beta)+((1-alpha)*dice_coefficient_loss(y_true, y_pred))
+    return loss
 
 def dice_coef(img, img2):
     if img.shape != img2.shape:
@@ -117,7 +118,7 @@ def calc_hausdorff(m1, m2):
     hausdorff.Execute(m1, m2)
     return hausdorff.GetHausdorffDistance()
 
-def calculate_statistics(imagepath_1,imagepath_2):
+def calculate_statistics(imagepath_1,imagepath_2,sample):
     all_masks1 = os.listdir(imagepath_1)
     all_masks2 = os.listdir(imagepath_2)
     ''' 
@@ -146,7 +147,5 @@ def calculate_statistics(imagepath_1,imagepath_2):
     dice = np.array(dice)
     stat_hd = [np.mean(hd),np.std(hd), np.max(hd),np.min(hd)]
     stat_dice = [np.mean(dice), np.std(dice), np.max(dice), np.min(dice)]
-    sample = open('metrics.txt', 'w')
     print('Hausdorff distance: {} Dice_coefficent: {}'.format(stat_hd, stat_dice),file=sample)
-    sample.close()
     return

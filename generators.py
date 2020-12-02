@@ -380,7 +380,7 @@ class generator3d(DataGenerator):
         for patch in list_IDs_temp:
             for i, ID in enumerate(patch[1]):
                 path = self.image_path + '/' + patch[0] + '/' + ID
-                img = self._load_grayscale_image_VTK(path)[:, :, 0]
+                img = self._load_dicom_image(path)[:, :, 0]
                 X[0, :, :, i, 0] = img
 
         return X
@@ -476,7 +476,7 @@ class generator3da(generator3d):
         for patch in list_IDs_temp:
             for i, ID in enumerate(patch[1]):
                 path= self.image_path + '/' + patch[0] + '/' + ID
-                img = self._load_grayscale_image_VTK(path)[:, :, 0]
+                img = self._load_dicom_image(path)[:, :, 0]
                 X[0, :, :, i, 0] = img
                 if self.bool:
                     X[0,:,:,i,:] = self.trans.apply_transform(X[0,:,:,i,:], self.param)

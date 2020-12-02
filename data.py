@@ -39,17 +39,22 @@ data_gen_args_dict = dict(shear_range=20,
                     fill_mode='nearest')
 data_path ={"train":['C:/Datasets/elderlymen1/2d/train_frames', 'C:/Datasets/elderlymen1/2d/train_masks'],
             "val":['C:/Datasets/elderlymen1/2d/val_frames', 'C:/Datasets/elderlymen1/2d/val_masks'],
-            "train3d": ['C:/Datasets/elderlymen1/3ddownsampled/train/images', 'C:/Datasets/elderlymen1/3ddownsampled/train/masks'],
-            "val3d": ['C:/Datasets/elderlymen1/3ddownsampled/val/images', 'C:/Datasets/elderlymen1/3ddownsampled/val/masks']
+            "train3d": ['C:/Datasets/elderlymen1/3d/train/images', 'C:/Datasets/elderlymen1/3d/train/masks'],
+            "val3d": ['C:/Datasets/elderlymen1/3d/val/images', 'C:/Datasets/elderlymen1/3d/val/masks']
             }
 test_paths = {1:['C:/Datasets/elderlymen1/2d/test_frames','C:/Datasets/elderlymen1/2d/test_masks'],
-              2:['C:/Datasets/elderlymen1/3ddownsampled/test/images','C:/Datasets/elderlymen1/3ddownsampled/test/masks'],
+              2:['C:/Datasets/elderlymen1/3d/test/images','C:/Datasets/elderlymen1/3d/test/masks'],
               3:['C:/Datasets/elderlymen2/2d/images','C:/Datasets/elderlymen2/2d/FASCIA_FINAL'],
               4:['C:/Datasets/youngmen/2d/images','C:/Datasets/youngmen/2d/FASCIA_FINAL'],
               5:['C:/Datasets/elderlywomen/2d/images','C:/Datasets/elderlywomen/2d/FASCIA_FINAL']
               }
+save_path = {1:['C:/final_results/elderlymen1/3d','C:/final_results/elderlymen1/3doverlay1' ,'C:/final_results/elderlymen1/3doverlay2'],
+               2:['C:/final_results/elderlymen2/3d','C:/final_results/elderlymen2/3doverlay1' ,'C:/final_results/elderlymen2/3doverlay2'],
+               3:['C:/final_results/youngmen/3d','C:/final_results/youngmen/3doverlay1' ,'C:/final_results/youngmen/3doverlay2'],
+               4:['C:/final_results/elderlywomen/3d','C:/final_results/elderlywomen/3doverlay1' ,'C:/final_results/elderlywomen/3doverlay2']}
+
 save_paths3d ={1:['C:/final_results/elderlymen1/3d', 'C:/Datasets/elderlymen1/3ddownsampled/test/images',
-               'C:/Datasets/elderlymen1/2d/images','C:/final_results/elderlymen1/3doverlaydown', 'C:/final_results/elderlymen2/3doverlay'],
+               'C:/Datasets/elderlymen1/2d/images','C:/final_results/elderlymen1/3doverlaydown', 'C:/final_results/elderlymen1/3doverlay'],
             2:['C:/final_results/elderlymen2/3d', 'C:/Datasets/elderlymen2/3ddownsampled/image',
                'C:/Datasets/elderlymen2/2d/images','C:/final_results/elderlymen2/3doverlaydown', 'C:/final_results/elderlymen2/3doverlay'],
             3:['C:/final_results/youngmen/3d', 'C:/Datasets/youngmen/3ddownsampled/image',
@@ -197,9 +202,10 @@ def export_as_mhd(mask_path,save_path,n_slices = 28):
 
 
 def make_overlay(overlay, background):
-    background = background[:, :, 0] / np.max(background[:, :, 0])
+    background = background[:, :] / np.max(background[:, :])
     background = Image.fromarray((background * 255).astype('uint8'))
     background = background.convert("RGBA")
+    overlay = Image.fromarray((overlay[:,:,0] * 255).astype('uint8'))
     overlay = overlay.convert("RGBA")
 
     # Split into 3 channels
@@ -221,7 +227,7 @@ def overlay3dup(background,overlay, size = (512, 512)):
     background = Image.fromarray((img * 255).astype('uint8'))
     # background = background.rotate(90, expand=True)
     # background = Image.fromarray((img2).astype('float'))
-    overlay = cv2.resize(overlay[:, :], size, interpolation=cv2.INTER_NEAREST)
+    #overlay = cv2.resize(overlay[:, :], size, interpolation=cv2.INTER_NEAREST)
     overlay = cv2.medianBlur(overlay, 5)
     overlay = Image.fromarray((overlay * 255).astype('uint8'))
 
@@ -251,7 +257,7 @@ def saveResult(save_path,npyfile,flag_multi_class = False,num_class = 2, test_fr
         all_frames = os.listdir(test_frames_path)
         for i, item in enumerate(npyfile):
             img = labelVisualize(num_class, COLOR_DICT, item) if flag_multi_class else item[:, :, 0]
-            #img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
             io.imsave(os.path.join(save_path, os.listdir(test_frames_path)[i][:-4] + ".png"), img)
             '''
             img2 = img.astype(np.float32)
@@ -264,7 +270,7 @@ def saveResult(save_path,npyfile,flag_multi_class = False,num_class = 2, test_fr
             '''
             overlay = Image.fromarray((img*255).astype('uint8'))
             background = load_dicom(os.path.join(test_frames_path, all_frames[i]))
-            #background = cv2.rotate(background, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            background = cv2.rotate(background, cv2.ROTATE_90_COUNTERCLOCKWISE)
             img = make_overlay(overlay,background)
             img.save(os.path.join(overlay_path, 'image_' + all_frames[i][6:16] + 'png'), "PNG")
 
@@ -290,15 +296,72 @@ def saveResult3d( npyfile, patch_size=8, flag_multi_class=False, num_class=2, sa
     for j,item in enumerate(npyfile):
         for i in range(0,np.shape(npyfile)[3]):
             img = labelVisualize(num_class, COLOR_DICT, item) if flag_multi_class else item[:, :, i,0]
+            img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            io.imsave(os.path.join(save_path, test_data[j][1][i][:-4] + ".png"), img)
+            #imagepath = test_frames_path + '/' + test_data[j][0] + '/' + test_data[j][1][i]
+            #background = load_grayscale_image_VTK(imagepath) #############uncomment if downsampled
+            #path = overlay_path+ '/'+ test_data[j][1][i][:-4] + '.png'
+            #overlay3d(background, img).save(path, "PNG")
+            path = os.path.join(overlay_path2, test_data[j][1][i][:-4] + '.png')
+            imagepath2 = framepath2 + '/'  + test_data[j][1][i][:-3]+'dcm'
+            background = load_dicom(imagepath2)
+            overlay3d(background, img).save(path, "PNG")
+            #path = os.path.join(overlay_path2, test_data[j][1][i][:-4] + '.png')
+            #overlay3dup(background, img).save(path, "PNG")
+
+def saveResult3dd(save_path,npyfile, patch_size =2, flag_multi_class = False,num_class = 2, test_frames_path=None,overlay_path=None):
+    '''
+    for i,item in enumerate(npyfile):
+        img = labelVisualize(num_class,COLOR_DICT,item) if flag_multi_class else item[:,:,0]
+        #io.imsave(os.path.join(save_path,"%d_predict.png"%i),img)
+        io.imsave(os.path.join(save_path, os.listdir(test_frames_path)[i][:-4]+".png"), img)
+    '''
+    all_frames = os.listdir(test_frames_path)
+    count = 0
+    test_data = []
+    number_of_patches = np.floor(len(os.listdir(test_frames_path + '/' + all_frames[0])) / patch_size)
+    for i, ID in enumerate(all_frames):
+        slices = os.listdir(os.path.join(test_frames_path, ID))
+        while count < number_of_patches:
+            patch = slices[(count * patch_size):((count + 1) * patch_size)]
+            test_data.append([ID, patch])
+            count += 1
+        count = 0
+
+    for j,item in enumerate(npyfile):
+        for i in range(0,np.shape(npyfile)[3]):
+            img = labelVisualize(num_class, COLOR_DICT, item) if flag_multi_class else item[:, :, i,0]
+            print(j)
             io.imsave(os.path.join(save_path, test_data[j][1][i][:-4] + ".png"), img)
             imagepath = test_frames_path + '/' + test_data[j][0] + '/' + test_data[j][1][i]
             background = load_grayscale_image_VTK(imagepath)
-            path = overlay_path+ '/'+ test_data[j][1][i][:-4] + '.png'
+            path = overlay_path + '/' + test_data[j][1][i][:-4] + '.png'
             make_overlay(background, img).save(path, "PNG")
-            imagepath2 = framepath2 + '/'  + test_data[j][1][i][:-3]+'dcm'
-            background = load_dicom(imagepath2)
-            path = os.path.join(overlay_path2, test_data[j][1][i][:-4] + '.png')
-            overlay3dup(background, img).save(path, "PNG")
+
+def overlay3d(background,overlay):
+    img =background[:,:,0]
+    img2 = img/ np.max(img)
+    #background = Image.fromarray(img2)
+    #img2 = cv2.rotate(img2, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    background = Image.fromarray((img2 * 255).astype('uint8'))
+    #background = background.rotate(360, expand=True)
+    # background = Image.fromarray((img2).astype('float'))
+    overlay = Image.fromarray((overlay * 255).astype('uint8'))
+
+    background = background.convert("RGBA")
+    overlay = overlay.convert("RGBA")
+
+    # Split into 3 channels
+    r, g, b, a = overlay.split()
+
+    # Increase Reds
+    g = b.point(lambda i: i * 0)
+
+    # Recombine back to RGB image
+    overlay = Image.merge('RGBA', (r, g, b, a))
+
+    new_img = Image.blend(background, overlay, 0.3)
+    return new_img
 
 class CyclicLR(Callback):
     """This callback implements a cyclical learning rate policy (CLR).
