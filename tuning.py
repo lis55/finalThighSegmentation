@@ -7,7 +7,7 @@ from datetime import datetime
 from datetime import date
 
 from sklearn.model_selection import GridSearchCV
-from keras.wrappers.scikit_learn import KerasClassifier
+from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 
 ####learning rate finder
 start_lr = 1e-6

@@ -5,7 +5,7 @@ from tensorflow.keras.utils import Sequence
 import matplotlib.pyplot as plt
 import os
 import random
-from keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 class DataGenerator(Sequence):
     """Generates data for Keras
@@ -186,20 +186,23 @@ class DataGenerator(Sequence):
 
     def downsample(self,dim,path):
         ids = os.listdir(self.mask_path)
+
         for i in ids:
-            img = self._load_grayscale_image_VTK(self.mask_path + '/' + i)[:, :, 0]
-            img = img*255
-            #img = img.astype(np.int8)
-            img = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
-            img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
-            cv2.imwrite(path+'/'+'masks'+'/'+i, img)
+            if i[0]=="l":
+                img = self._load_grayscale_image_VTK(self.mask_path + '/' + i)[:, :, 0]
+                img = img*255
+                #img = img.astype(np.int8)
+                img = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
+                img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                cv2.imwrite(path+'/'+'masks'+'/'+i, img)
         ids=os.listdir(self.image_path)
         for i in ids:
-            img = self._load_dicom_image(self.image_path+'/'+i)[:,:,0]
-            #img = cv2.resize(img,dim,interpolation=cv2.INTER_AREA)
-            img = (img*255).astype(np.int16)
-            img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
-            cv2.imwrite(path+'/'+'images'+'/'+i[:-3]+'png', img)
+            if i[0] == "i":
+                img = self._load_dicom_image(self.image_path+'/'+i)[:,:,0]
+                img = cv2.resize(img,dim,interpolation=cv2.INTER_AREA)
+                img = (img*255).astype(np.int16)
+                img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                cv2.imwrite(path+'/'+'images'+'/'+i[:-3]+'png', img)
 
     def plotFromGenerator(self,save_path=''):
         "Plots frames and masks, only works if batch size is 1"
@@ -380,7 +383,7 @@ class generator3d(DataGenerator):
         for patch in list_IDs_temp:
             for i, ID in enumerate(patch[1]):
                 path = self.image_path + '/' + patch[0] + '/' + ID
-                img = self._load_dicom_image(path)[:, :, 0]
+                img = self._load_grayscale_image_VTK(path)[:, :, 0]
                 X[0, :, :, i, 0] = img
 
         return X
@@ -476,7 +479,7 @@ class generator3da(generator3d):
         for patch in list_IDs_temp:
             for i, ID in enumerate(patch[1]):
                 path= self.image_path + '/' + patch[0] + '/' + ID
-                img = self._load_dicom_image(path)[:, :, 0]
+                img = self._load_grayscale_image_VTK(path)[:, :, 0]
                 X[0, :, :, i, 0] = img
                 if self.bool:
                     X[0,:,:,i,:] = self.trans.apply_transform(X[0,:,:,i,:], self.param)

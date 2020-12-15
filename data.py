@@ -8,11 +8,11 @@ from tensorflow.keras.utils import Sequence
 import vtk
 from vtk.util import numpy_support
 from PIL import Image
-from keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
 import SimpleITK as sitk
-from keras.callbacks import Callback
-import keras.backend as K
+from tensorflow.keras.callbacks import Callback
+import tensorflow.keras.backend as K
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -39,21 +39,26 @@ data_gen_args_dict = dict(shear_range=20,
                     fill_mode='nearest')
 data_path ={"train":['C:/Datasets/elderlymen1/2d/train_frames', 'C:/Datasets/elderlymen1/2d/train_masks'],
             "val":['C:/Datasets/elderlymen1/2d/val_frames', 'C:/Datasets/elderlymen1/2d/val_masks'],
-            "train3d": ['C:/Datasets/elderlymen1/3d/train/images', 'C:/Datasets/elderlymen1/3d/train/masks'],
-            "val3d": ['C:/Datasets/elderlymen1/3d/val/images', 'C:/Datasets/elderlymen1/3d/val/masks']
+            "train3d": ['C:/Datasets/elderlymen1/3dmedium/train/images', 'C:/Datasets/elderlymen1/3dmedium/train/masks'],
+            "val3d": ['C:/Datasets/elderlymen1/3dmedium/val/images', 'C:/Datasets/elderlymen1/3dmedium/val/masks']
             }
 test_paths = {1:['C:/Datasets/elderlymen1/2d/test_frames','C:/Datasets/elderlymen1/2d/test_masks'],
               2:['C:/Datasets/elderlymen1/3d/test/images','C:/Datasets/elderlymen1/3d/test/masks'],
               3:['C:/Datasets/elderlymen2/2d/images','C:/Datasets/elderlymen2/2d/FASCIA_FINAL'],
               4:['C:/Datasets/youngmen/2d/images','C:/Datasets/youngmen/2d/FASCIA_FINAL'],
-              5:['C:/Datasets/elderlywomen/2d/images','C:/Datasets/elderlywomen/2d/FASCIA_FINAL']
+              5:['C:/Datasets/elderlywomen/2d/images','C:/Datasets/elderlywomen/2d/FASCIA_FINAL'],
+              "test3d": ['C:/Datasets/elderlymen1/3dmedium/test/images',
+                          'C:/Datasets/elderlymen1/3dmedium/test/masks'],
+              6:['C:/Datasets/elderlymen2/3dmedium/image','C:/Datasets/elderlymen2/3dmedium/mask'],
+              7:['C:/Datasets/youngmen/3dmedium/image','C:/Datasets/youngmen/3dmedium/mask'],
+              8:['C:/Datasets/elderlywomen/3dmedium/image','C:/Datasets/elderlywomen/3dmedium/mask'],
               }
 save_path = {1:['C:/final_results/elderlymen1/3d','C:/final_results/elderlymen1/3doverlay1' ,'C:/final_results/elderlymen1/3doverlay2'],
                2:['C:/final_results/elderlymen2/3d','C:/final_results/elderlymen2/3doverlay1' ,'C:/final_results/elderlymen2/3doverlay2'],
                3:['C:/final_results/youngmen/3d','C:/final_results/youngmen/3doverlay1' ,'C:/final_results/youngmen/3doverlay2'],
                4:['C:/final_results/elderlywomen/3d','C:/final_results/elderlywomen/3doverlay1' ,'C:/final_results/elderlywomen/3doverlay2']}
 
-save_paths3d ={1:['C:/final_results/elderlymen1/3d', 'C:/Datasets/elderlymen1/3ddownsampled/test/images',
+save_paths3d ={1:['C:/final_results/elderlymen1/3d', 'C:/Datasets/elderlymen1/3dmedium/test/images',
                'C:/Datasets/elderlymen1/2d/images','C:/final_results/elderlymen1/3doverlaydown', 'C:/final_results/elderlymen1/3doverlay'],
             2:['C:/final_results/elderlymen2/3d', 'C:/Datasets/elderlymen2/3ddownsampled/image',
                'C:/Datasets/elderlymen2/2d/images','C:/final_results/elderlymen2/3doverlaydown', 'C:/final_results/elderlymen2/3doverlay'],
@@ -64,10 +69,26 @@ save_paths3d ={1:['C:/final_results/elderlymen1/3d', 'C:/Datasets/elderlymen1/3d
                'C:/final_results/elderlywomen/3doverlay']
              }
 save_path2d = {1:['C:/final_results/elderlymen1/2d','C:/final_results/elderlymen1/2doverlay1' ,'C:/final_results/elderlymen1/2doverlay2'],
-               2:['C:/final_results/elderlymen2/2d','C:/final_results/elderlymen2/2doverlay1' ,'C:/final_results/elderlymen2/2doverlay2'],
-               3:['C:/final_results/youngmen/2d','C:/final_results/youngmen/2doverlay1' ,'C:/final_results/youngmen/2doverlay2'],
-               4:['C:/final_results/elderlywomen/2d','C:/final_results/elderlywomen/2doverlay1' ,'C:/final_results/elderlywomen/2doverlay2']}
+               2:['C:/final_results/elderlymen2/2d','C:/final_results/elderlymen2/2doverlay1' ,'C:/final_results/elderlymen2/2doverlay2','C:/final_results/elderlymen2/2dmhd'],
+               3:['C:/final_results/youngmen/2d','C:/final_results/youngmen/2doverlay1' ,'C:/final_results/youngmen/2doverlay2','C:/final_results/youngmen/2dmhd'],
+               4:['C:/final_results/elderlywomen/2d','C:/final_results/elderlywomen/2doverlay1' ,'C:/final_results/elderlywomen/2doverlay2','C:/final_results/elderlywomen/2dmhd']}
 
+def reorderframes(d2_frame_path,d2_mask_path,d3_frame_path,d3_mask_path,slices,patients):
+    all_frames = os.listdir(d2_frame_path)
+    all_masks = os.listdir(d2_mask_path)
+    for i in range(1, patients+1):
+        if not os.path.isdir(d3_frame_path + '/' + str(i)):
+            os.makedirs(d3_frame_path + '/' + str(i))
+    for i in range(1, patients+1):
+        if not os.path.isdir(d3_mask_path + '/' + str(i)):
+            os.makedirs(d3_mask_path + '/' + str(i))
+    count = 1
+    for i in range(0, len(all_frames), slices):
+        print(i)
+        for j in range(i, i + slices):
+            shutil.move(d2_frame_path + '/' + all_frames[j], d3_frame_path + '/' + str(count) + '/' + all_frames[j])
+            shutil.move(d2_mask_path + '/' + all_masks[j], d3_mask_path + '/' + str(count) + '/' + all_masks[j])
+        count += 1
 def labelVisualize(num_class,color_dict,img):
     img = img[:,:,0] if len(img.shape) == 3 else img
     img_out = np.zeros(img.shape + (3,))
@@ -182,21 +203,30 @@ def saveSitkPng(array, path):
 
 def saveSitkMdh(npy_output,save_path):
     sitk_output_image = sitk.GetImageFromArray(npy_output)
+    sitk_output_image.SetSpacing([0.4883, 0.4883,3])
     sitk.WriteImage(sitk_output_image, save_path)
 
 def saveCv2Png(array, path):
     array = (array * 255).astype(np.int16)
     cv2.imwrite(path,array)
 
-def export_as_mhd(mask_path,save_path,n_slices = 28):
+def export_as_mhd(mask_path,save_path,n_slices = 34,missing=8):
+    training = 36
     all_frames = os.listdir(mask_path)
     shape = load_grayscale_image_VTK(os.path.join(mask_path, all_frames[0])).shape
-    mdh_array = np.zeros(shape + (n_slices))
-    for i in range(0, len(all_frames), n_slices):
-        name = all_frames[i]
+    mdh_array = np.zeros((n_slices,shape[0],shape[1])).astype(np.uint8)
+    stack = n_slices-missing
+    for i in range(0, len(all_frames), stack):
+        name = all_frames[i][:-4]+'.mhd'
         count = 0
-        for j in range(i, i + n_slices):
-            mdh_array[count]=load_grayscale_image_VTK(os.path.join(mask_path, all_frames[j]))
+        for j in range(i, i + stack):
+            if int(all_frames[j][13]) == 0:
+                id = int(all_frames[j][14])
+            else:
+                id = int(all_frames[j][13:15])
+            img = load_grayscale_image_VTK(os.path.join(mask_path, all_frames[j]))
+            img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE).astype(np.uint8)
+            mdh_array[id-1]= img
             count += 1
         saveSitkMdh(mdh_array,os.path.join(save_path,name))
 
@@ -205,7 +235,6 @@ def make_overlay(overlay, background):
     background = background[:, :] / np.max(background[:, :])
     background = Image.fromarray((background * 255).astype('uint8'))
     background = background.convert("RGBA")
-    overlay = Image.fromarray((overlay[:,:,0] * 255).astype('uint8'))
     overlay = overlay.convert("RGBA")
 
     # Split into 3 channels
@@ -224,10 +253,10 @@ def make_overlay(overlay, background):
 def overlay3dup(background,overlay, size = (512, 512)):
     img =background[:,:,0]
     img = img/ np.max(img)
-    background = Image.fromarray((img * 255).astype('uint8'))
-    # background = background.rotate(90, expand=True)
+    background = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    background = Image.fromarray((background * 255).astype('uint8'))
     # background = Image.fromarray((img2).astype('float'))
-    #overlay = cv2.resize(overlay[:, :], size, interpolation=cv2.INTER_NEAREST)
+    overlay = cv2.resize(overlay[:, :], size, interpolation=cv2.INTER_NEAREST)
     overlay = cv2.medianBlur(overlay, 5)
     overlay = Image.fromarray((overlay * 255).astype('uint8'))
 
@@ -258,6 +287,7 @@ def saveResult(save_path,npyfile,flag_multi_class = False,num_class = 2, test_fr
         for i, item in enumerate(npyfile):
             img = labelVisualize(num_class, COLOR_DICT, item) if flag_multi_class else item[:, :, 0]
             img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            #img[img >= 0.1] = 1
             io.imsave(os.path.join(save_path, os.listdir(test_frames_path)[i][:-4] + ".png"), img)
             '''
             img2 = img.astype(np.float32)
@@ -282,6 +312,10 @@ def saveResult3d( npyfile, patch_size=8, flag_multi_class=False, num_class=2, sa
         #io.imsave(os.path.join(save_path,"%d_predict.png"%i),img)
         io.imsave(os.path.join(save_path, os.listdir(test_frames_path)[i][:-4]+".png"), img)
     '''
+    '''    list1 = npyfile.tolist()
+    del list1[::26]
+    del list1[::26]
+    npyfile = np.asarray(list1)'''
     all_frames = os.listdir(test_frames_path)
     count = 0
     test_data = []
@@ -297,6 +331,7 @@ def saveResult3d( npyfile, patch_size=8, flag_multi_class=False, num_class=2, sa
         for i in range(0,np.shape(npyfile)[3]):
             img = labelVisualize(num_class, COLOR_DICT, item) if flag_multi_class else item[:, :, i,0]
             img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            img[img >= 0.1] = 1
             io.imsave(os.path.join(save_path, test_data[j][1][i][:-4] + ".png"), img)
             #imagepath = test_frames_path + '/' + test_data[j][0] + '/' + test_data[j][1][i]
             #background = load_grayscale_image_VTK(imagepath) #############uncomment if downsampled
@@ -305,7 +340,7 @@ def saveResult3d( npyfile, patch_size=8, flag_multi_class=False, num_class=2, sa
             path = os.path.join(overlay_path2, test_data[j][1][i][:-4] + '.png')
             imagepath2 = framepath2 + '/'  + test_data[j][1][i][:-3]+'dcm'
             background = load_dicom(imagepath2)
-            overlay3d(background, img).save(path, "PNG")
+            overlay3dup(background, img).save(path, "PNG")
             #path = os.path.join(overlay_path2, test_data[j][1][i][:-4] + '.png')
             #overlay3dup(background, img).save(path, "PNG")
 

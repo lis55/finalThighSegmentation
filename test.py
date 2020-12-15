@@ -10,6 +10,9 @@ from datetime import date
 import tensorflow
 from tuning import *
 
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]=""
+
 
 '''frame_path = "C:/smol/train_frames"
 mask_path = "C:/smol/train_masks2"
@@ -37,18 +40,34 @@ testgen = DataGenerator(list_IDs, test_paths[1][0],test_paths[1][1], to_fit=True
 #plotFromGenerator3d(gen3da)
 
 ############# model ##############
+sample = open('splitting.txt', 'r')
+sets = sample.readline()
+sample.close()
+sets = eval(sets)
+
+frames_path = 'C:/Datasets/elderlymen1/2d/images'
+masks_path = 'C:/Datasets/elderlymen1/2d/FASCIA_FILLED'
+
+list_IDs = sets[0][0]
+genaug =DataGenerator2(list_IDs, frames_path,masks_path, to_fit=True, batch_size=2, dim=(512, 512),dimy=(512, 512), n_channels=1, n_classes=2, shuffle=True, data_gen_args =data_gen_args_dict)
+list_IDs = sets[1][1]
+genval =DataGenerator(list_IDs, frames_path,masks_path, to_fit=True, batch_size=2, dim=(512, 512),dimy=(512, 512), n_channels=1, n_classes=2, shuffle=True)
+list_IDs = sets[2][0]
+testgen = DataGenerator(list_IDs, frames_path,masks_path, to_fit=True, batch_size=1, dim=(512, 512),dimy=(512, 512), n_channels=1, n_classes=2, shuffle=False)
+
+
 try:
     sample = open('metrics.txt', '+r')
 except:
     sample = open('metrics.txt', 'x')
+    sample.close()
     sample = open('metrics.txt', '+r')
 print('{} {}'.format(date.today(),datetime.now()),file=sample)
-model_checkpoint = ModelCheckpoint('unet_ThighOuterSurfaceval.hdf5', monitor='val_loss', verbose=1, save_best_only=True)
-model_checkpoint2 = ModelCheckpoint('unet_ThighOuterSurface.hdf5', monitor='loss', verbose=1, save_best_only=True)
+model_checkpoint = tf.keras.callbacks.ModelCheckpoint('unet_ThighOuterSurfaceval.hdf5', monitor='val_loss', verbose=1, save_best_only=True)
+model_checkpoint2 = tf.keras.callbacks.ModelCheckpoint('unet_ThighOuterSurface.hdf5', monitor='loss', verbose=1, save_best_only=True)
 #2d
 model = unet(pretrained_weights='csa/unet_ThighOuterSurface.hdf5')
-model.compile(optimizer=tf.keras.optimizers.Adam(1e-5), loss=combo_loss, metrics=[dice_accuracy])
-history = model.fit_generator(genaug, validation_data=genval, validation_steps=len(genval), steps_per_epoch=len(genaug), epochs=15, callbacks=[clr,model_checkpoint, model_checkpoint2])
+history = model.fit(genaug, validation_data=genval, validation_steps=len(genval), steps_per_epoch=len(genaug), epochs=5, callbacks=[clr,model_checkpoint, model_checkpoint2])
 
 ######### predict and save ###########
 
@@ -72,9 +91,10 @@ plt.legend(['train accuracy', 'validation accuracy'], loc='upper right')
 plt.savefig('accuracy.png')
 print('{} {}'.format(date.today(),datetime.now()),file=sample)
 #2D
-model = unet(pretrained_weights='csa/unet_ThighOuterSurfaceval.hdf5')
+model = unet(pretrained_weights='unet_ThighOuterSurfaceval.hdf5')
 results = model.predict_generator(testgen, len(list_IDs), verbose=1)
-saveResult(save_path2d[1][0], results, test_frames_path=test_frames,overlay=True,overlay_path=save_path2d[1][1])
+#saveResult(save_path2d[1][0], results, test_frames_path=test_paths[1][0],overlay=True,overlay_path=save_path2d[1][1])
+saveResult(save_path2d[1][0], results, test_frames_path=sets[2][0],overlay=True,overlay_path=save_path2d[1][1])
 loss, acc = model.evaluate_generator(testgen, len(testgen), verbose=0)
 print(loss,acc)
 print('Test loss: {} Test accuracy {}'.format(loss, acc),file=sample)

@@ -1,13 +1,13 @@
 from data import *
 from functools import partial
-from keras import backend as K
+from tensorflow.keras import backend as K
 import tensorflow as tf
 import matplotlib as plt
 import math
 #from sklearn.utils.extmath import cartesian
 
 
-def dice_coefficient(y_true, y_pred, smooth=2.):
+def dice_coefficient(y_true, y_pred, smooth=0.01):
     y_true_f = K.flatten(y_true)
     y_pred_f = K.flatten(y_pred)
     intersection = K.sum(y_true_f * y_pred_f)
@@ -98,7 +98,7 @@ def dice_loss(y_true, y_pred, smooth=50):
     return 1 - val
 
 
-def combo_loss(alpha=0.3, beta=0.4): # beta before 0.4
+def combo_loss(alpha=0.2, beta=0.4): # beta before 0.4
     def loss(y_true, y_pred):
         return alpha*tf.nn.weighted_cross_entropy_with_logits(y_true, y_pred, pos_weight=beta)+((1-alpha)*dice_coefficient_loss(y_true, y_pred))
     return loss
@@ -118,7 +118,7 @@ def calc_hausdorff(m1, m2):
     hausdorff.Execute(m1, m2)
     return hausdorff.GetHausdorffDistance()
 
-def calculate_statistics(imagepath_1,imagepath_2,sample):
+def calculate_statistics(imagepath_1,imagepath_2, sample, size =None):
     all_masks1 = os.listdir(imagepath_1)
     all_masks2 = os.listdir(imagepath_2)
     ''' 
@@ -128,20 +128,34 @@ def calculate_statistics(imagepath_1,imagepath_2,sample):
     '''
     hd=[]
     dice =[]
-    for mask1, mask2 in zip(all_masks1,all_masks2):
-        m1 = load_grayscale_image_VTK(os.path.join(imagepath_1, mask1))
-        #m1 = cv2.rotate(m1, cv2.ROTATE_90_COUNTERCLOCKWISE)
-        #plt.imshow(Image.fromarray(m1[:,:]*255), cmap=plt.cm.bone)
-        #plt.show()
-        m2 = load_grayscale_image_VTK(os.path.join(imagepath_2, mask2))
-        #m2 = cv2.rotate(m2, cv2.ROTATE_90_COUNTERCLOCKWISE)
-        #plt.imshow(Image.fromarray(m2[:,:,0]*255), cmap=plt.cm.bone)
-        #plt.show()
-        #m1 = cv2.resize(m1[:, :], (512, 512), interpolation=cv2.INTER_NEAREST)
-        #m1 = cv2.medianBlur(m1, 5)
-        dice.append(dice_coef(m1[:,:,0], m2[:,:,0]))
-        hd.append(calc_hausdorff(m1[:,:,0],m2[:,:,0]))
-
+    if size == None:
+        for mask1, mask2 in zip(all_masks1,all_masks2):
+            m1 = load_grayscale_image_VTK(os.path.join(imagepath_1, mask1))
+            #m1 = cv2.rotate(m1, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            #plt.imshow(Image.fromarray(m1[:,:]*255), cmap=plt.cm.bone)
+            #plt.show()
+            m2 = load_grayscale_image_VTK(os.path.join(imagepath_2, mask2))
+            #m2 = cv2.rotate(m2, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            #plt.imshow(Image.fromarray(m2[:,:,0]*255), cmap=plt.cm.bone)
+            #plt.show()
+            #m1 = cv2.resize(m1[:, :], (512, 512), interpolation=cv2.INTER_NEAREST)
+            #m1 = cv2.medianBlur(m1, 5)
+            dice.append(dice_coefficient(m1[:,:,0], m2[:,:,0]))
+            hd.append(calc_hausdorff(m1[:,:,0],m2[:,:,0]))
+    else:
+        for mask1, mask2 in zip(all_masks1,all_masks2):
+            m1 = load_grayscale_image_VTK(os.path.join(imagepath_1, mask1))
+            #m1 = cv2.rotate(m1, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            #plt.imshow(Image.fromarray(m1[:,:]*255), cmap=plt.cm.bone)
+            #plt.show()
+            m2 = load_grayscale_image_VTK(os.path.join(imagepath_2, 'label_' + mask1[6:15] + '.png'))
+            #m2 = cv2.rotate(m2, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            #plt.imshow(Image.fromarray(m2[:,:,0]*255), cmap=plt.cm.bone)
+            #plt.show()
+            m1 = cv2.resize(m1[:, :], (512, 512), interpolation=cv2.INTER_NEAREST)
+            m1 = cv2.medianBlur(m1, 5)
+            dice.append(dice_coef(m1[:,:], m2[:,:,0]))
+            hd.append(calc_hausdorff(m1[:,:],m2[:,:,0]))
 
     hd=np.array(hd)
     dice = np.array(dice)

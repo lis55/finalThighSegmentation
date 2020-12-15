@@ -28,8 +28,8 @@ testgen3d = generator3d(list_IDs, test_paths[2][0],test_paths[2][1], to_fit=True
 ############# models ##############
 sample = open('metrics.txt', 'w')
 print('{} {}'.format(date.today(),datetime.now()))
-model_checkpoint = ModelCheckpoint('unet_ThighOuterSurfaceval.hdf5', monitor='val_loss', verbose=1, save_best_only=True)
-model_checkpoint2 = ModelCheckpoint('unet_ThighOuterSurface.hdf5', monitor='loss', verbose=1, save_best_only=True)
+model_checkpoint = tf.keras.callbacks.ModelCheckpoint.ModelCheckpoint('unet_ThighOuterSurfaceval.hdf5', monitor='val_loss', verbose=1, save_best_only=True)
+model_checkpoint2 = tf.keras.callbacks.ModelCheckpoint.ModelCheckpoint('unet_ThighOuterSurface.hdf5', monitor='loss', verbose=1, save_best_only=True)
 
 #2d
 model = unet()

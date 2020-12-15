@@ -62,6 +62,9 @@ def crossvalidation(epoch,kf, loops):
     fold_var = 1
     values_alpha = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
     values_lr = [1e-4,2e-4,3e-4,4e-4,5e-4,6e-4,7e-4,8e-4,9e-4]
+    values_alpha = [0.2]
+    values_lr = [2e-4]
+
     for i in values_alpha:
         for j in values_lr:
         #while i <= loops:
