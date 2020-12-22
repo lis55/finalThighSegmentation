@@ -287,7 +287,8 @@ def saveResult(save_path,npyfile,flag_multi_class = False,num_class = 2, test_fr
         for i, item in enumerate(npyfile):
             img = labelVisualize(num_class, COLOR_DICT, item) if flag_multi_class else item[:, :, 0]
             img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
-            #img[img >= 0.1] = 1
+            img[img >= 0.1] = 1
+            img[img < 0.1] = 0
             io.imsave(os.path.join(save_path, os.listdir(test_frames_path)[i][:-4] + ".png"), img)
             '''
             img2 = img.astype(np.float32)
@@ -332,6 +333,7 @@ def saveResult3d( npyfile, patch_size=8, flag_multi_class=False, num_class=2, sa
             img = labelVisualize(num_class, COLOR_DICT, item) if flag_multi_class else item[:, :, i,0]
             img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
             img[img >= 0.1] = 1
+            img[img < 0.1] = 0
             io.imsave(os.path.join(save_path, test_data[j][1][i][:-4] + ".png"), img)
             #imagepath = test_frames_path + '/' + test_data[j][0] + '/' + test_data[j][1][i]
             #background = load_grayscale_image_VTK(imagepath) #############uncomment if downsampled

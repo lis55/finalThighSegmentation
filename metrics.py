@@ -2,9 +2,8 @@ from data import *
 from functools import partial
 from tensorflow.keras import backend as K
 import tensorflow as tf
-import matplotlib as plt
-import math
-#from sklearn.utils.extmath import cartesian
+from surface_distance import metrics
+
 
 
 def dice_coefficient(y_true, y_pred, smooth=0.01):
@@ -51,8 +50,8 @@ def get_label_dice_coefficient_function(label_index):
     return f
 
 
-dice_coef = dice_coefficient
-dice_coef_loss = dice_coefficient_loss
+#dice_coef = dice_coefficient
+#dice_coef_loss = dice_coefficient_loss
 
 ALPHA = 0.8
 GAMMA = 2
@@ -107,8 +106,9 @@ def dice_coef(img, img2):
     if img.shape != img2.shape:
         raise ValueError("Shape mismatch: img and img2 must have to be of the same shape.")
     else:
-        intersection = np.logical_and(img, img2)
-        value = (2. * intersection.sum()) / (img.sum() + img2.sum())
+        #intersection = np.logical_and(img, img2)
+        intersection = img*img2
+        value = (2. * intersection.sum()+0.01) / (img.sum() + img2.sum()+0.01)
     return value
 
 def calc_hausdorff(m1, m2):
@@ -128,6 +128,9 @@ def calculate_statistics(imagepath_1,imagepath_2, sample, size =None):
     '''
     hd=[]
     dice =[]
+    surface_dice = []
+    ASD1= []
+    ASD2= []
     if size == None:
         for mask1, mask2 in zip(all_masks1,all_masks2):
             m1 = load_grayscale_image_VTK(os.path.join(imagepath_1, mask1))
@@ -140,8 +143,17 @@ def calculate_statistics(imagepath_1,imagepath_2, sample, size =None):
             #plt.show()
             #m1 = cv2.resize(m1[:, :], (512, 512), interpolation=cv2.INTER_NEAREST)
             #m1 = cv2.medianBlur(m1, 5)
-            dice.append(dice_coefficient(m1[:,:,0], m2[:,:,0]))
+            dice.append(dice_coef(m1[:,:,0], m2[:,:,0]))
             hd.append(calc_hausdorff(m1[:,:,0],m2[:,:,0]))
+            imagea = m1.astype(np.bool)[:,:,0]
+            imageb = m2.astype(np.bool)[:, :, 0]
+            distance = metrics.compute_surface_distances(imagea, imageb, (1, 1))
+            averageDistance = metrics.compute_average_surface_distance(distance)
+            surfDice = metrics.compute_surface_dice_at_tolerance(distance, 0.1)
+            ASD1.append(averageDistance[0])
+            ASD2.append(averageDistance[1])
+            surface_dice.append(surfDice)
+
     else:
         for mask1, mask2 in zip(all_masks1,all_masks2):
             m1 = load_grayscale_image_VTK(os.path.join(imagepath_1, mask1))
@@ -153,13 +165,33 @@ def calculate_statistics(imagepath_1,imagepath_2, sample, size =None):
             #plt.imshow(Image.fromarray(m2[:,:,0]*255), cmap=plt.cm.bone)
             #plt.show()
             m1 = cv2.resize(m1[:, :], (512, 512), interpolation=cv2.INTER_NEAREST)
+            m1[m1 >= 0.1]=1
+            m1[m1 < 0.1]=0
             m1 = cv2.medianBlur(m1, 5)
             dice.append(dice_coef(m1[:,:], m2[:,:,0]))
             hd.append(calc_hausdorff(m1[:,:],m2[:,:,0]))
 
+            imagea = m1.astype(np.bool)
+            imageb = m2.astype(np.bool)[:, :, 0]
+            distance = metrics.compute_surface_distances(imagea, imageb, (1, 1))
+            averageDistance = metrics.compute_average_surface_distance(distance)
+            surfDice = metrics.compute_surface_dice_at_tolerance(distance, 0.1)
+            ASD1.append(averageDistance[0])
+            ASD2.append(averageDistance[1])
+            surface_dice.append(surfDice)
     hd=np.array(hd)
     dice = np.array(dice)
     stat_hd = [np.mean(hd),np.std(hd), np.max(hd),np.min(hd)]
     stat_dice = [np.mean(dice), np.std(dice), np.max(dice), np.min(dice)]
-    print('Hausdorff distance: {} Dice_coefficent: {}'.format(stat_hd, stat_dice),file=sample)
+    ASD1 = [np.mean(ASD1),np.std(ASD1), np.max(ASD1),np.min(ASD1)]
+    ASD2 = [np.mean(ASD2), np.std(ASD2), np.max(ASD2), np.min(ASD2)]
+    surface_dice = [np.mean(surface_dice), np.std(surface_dice), np.max(surface_dice), np.min(surface_dice)]
+    print('Hausdorff distance: {} Dice_coefficent: {} ASD1: {} ASD2: {} Surface Dice: {}'.format(stat_hd, stat_dice,ASD1,ASD2,surface_dice),file=sample)
     return
+
+
+
+
+
+
+

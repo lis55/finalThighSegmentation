@@ -247,6 +247,13 @@ class DataGenerator2(DataGenerator):
         if data_gen_args !=None:
             self.trans = ImageDataGenerator(**data_gen_args)
 
+    def __next__(self):
+        if self.n >= self.max:
+            self.n = 0
+        result = self.__getitem__(self.n)
+        self.n += 1
+        return result
+
     def _generate_X(self, list_IDs_temp):
         """Generates data containing batch_size images
         :param list_IDs_temp: list of label ids to load

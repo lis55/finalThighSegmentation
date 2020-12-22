@@ -5,12 +5,13 @@ from generators import *
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]=""
 
-model = unet(pretrained_weights='unet_ThighOuterSurface.hdf5')
+model = unet(pretrained_weights='final/unet_ThighOuterSurface.hdf5')
 model.compile(optimizer=tf.keras.optimizers.Adam(lr=3e-5), loss=combo_loss(alpha=0.2, beta=0.4),
               metrics=[dice_accuracy])
 sample = open('metrics2.txt', '+r')
 
 i=1
+
 list_IDs = os.listdir(test_paths[i][0])
 testgen = DataGenerator(list_IDs, test_paths[i][0], test_paths[i][1], to_fit=True, batch_size=1, dim=(512, 512),
                         dimy=(512, 512), n_channels=1, n_classes=2, shuffle=False)
