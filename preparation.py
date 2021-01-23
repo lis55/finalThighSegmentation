@@ -5,9 +5,8 @@ from generators import *
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]=""
 
-model = unet(pretrained_weights='final/unet_ThighOuterSurface.hdf5')
-model.compile(optimizer=tf.keras.optimizers.Adam(lr=3e-5), loss=combo_loss(alpha=0.2, beta=0.4),
-              metrics=[dice_accuracy])
+model = unet_no_dropout(pretrained_weights='C:/Users/lis/Desktop/overfitting/swish+dice/unet_ThighOuterSurfaceval.hdf5')
+#model.compile(optimizer=tf.keras.optimizers.Adam(lr=3e-5), loss=combo_loss(alpha=0.2, beta=0.4),metrics=[dice_accuracy])
 sample = open('metrics2.txt', '+r')
 
 i=1

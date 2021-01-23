@@ -131,6 +131,7 @@ def calculate_statistics(imagepath_1,imagepath_2, sample, size =None):
     surface_dice = []
     ASD1= []
     ASD2= []
+    ASD = []
     if size == None:
         for mask1, mask2 in zip(all_masks1,all_masks2):
             m1 = load_grayscale_image_VTK(os.path.join(imagepath_1, mask1))
@@ -152,6 +153,7 @@ def calculate_statistics(imagepath_1,imagepath_2, sample, size =None):
             surfDice = metrics.compute_surface_dice_at_tolerance(distance, 0.1)
             ASD1.append(averageDistance[0])
             ASD2.append(averageDistance[1])
+            ASD.append((averageDistance[0] + averageDistance[1]) / 2)
             surface_dice.append(surfDice)
 
     else:
@@ -178,6 +180,7 @@ def calculate_statistics(imagepath_1,imagepath_2, sample, size =None):
             surfDice = metrics.compute_surface_dice_at_tolerance(distance, 0.1)
             ASD1.append(averageDistance[0])
             ASD2.append(averageDistance[1])
+            ASD.append((averageDistance[0]+averageDistance[1])/2)
             surface_dice.append(surfDice)
     hd=np.array(hd)
     dice = np.array(dice)
@@ -185,8 +188,10 @@ def calculate_statistics(imagepath_1,imagepath_2, sample, size =None):
     stat_dice = [np.mean(dice), np.std(dice), np.max(dice), np.min(dice)]
     ASD1 = [np.mean(ASD1),np.std(ASD1), np.max(ASD1),np.min(ASD1)]
     ASD2 = [np.mean(ASD2), np.std(ASD2), np.max(ASD2), np.min(ASD2)]
+    ASD = [np.mean(ASD), np.std(ASD), np.max(ASD), np.min(ASD)]
     surface_dice = [np.mean(surface_dice), np.std(surface_dice), np.max(surface_dice), np.min(surface_dice)]
     print('Hausdorff distance: {} Dice_coefficent: {} ASD1: {} ASD2: {} Surface Dice: {}'.format(stat_hd, stat_dice,ASD1,ASD2,surface_dice),file=sample)
+    print('{} {} {} {} {} {} {} {}'.format(stat_dice[0],stat_dice[1], stat_hd[0],stat_hd[1], ASD[0], ASD[1],surface_dice[0], surface_dice[1]),file=sample)
     return
 
 
